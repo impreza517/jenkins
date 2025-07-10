@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kubestronaut-web
+  labels:
+    app: kubestronaut
+spec:
+  containers:
+  - name: nginx
+    image: nginx:alpine
+    ports:
+    - containerPort: 80
+    volumeMounts:
+    - name: html
+      mountPath: /usr/share/nginx/html
+    command: ["/bin/sh", "-c"]
+    args:
+      - |
+        mkdir -p /usr/share/nginx/html
+        echo "<html><head><meta http-equiv='refresh' content='5'><title>Kubestronaut</title></head>
+        <body style='text-align: center; font-family: sans-serif;'>
+        <h1>🚀 Kubestronaut Time Page</h1>
+        <p>現在時間：$(date)</p>
+        <p>時區：$(date +'%Z %z')</p>
+        <img src='Kubestronaut.png' width='200'/>
+        </body></html>" > /usr/share/nginx/html/index.html
+        cp /kubestronaut/Kubestronaut.png /usr/share/nginx/html/
+        nginx -g 'daemon off;'
+    volumeMounts:
+    - name: img
+      mountPath: /kubestronaut
+  volumes:
+  - name: html
+    emptyDir: {}
+  - name: img
+    configMap:
+      name: kubestronaut-img
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubestronaut-img
+binaryData:
+  Kubestronaut.png: |
+    {{IMAGE_BASE64_DATA}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubestronaut-web
+spec:
+  selector:
+    app: kubestronaut
+  ports:
+  - port: 80
+    targetPort: 80
+    nodePort: 30088
+  type: NodePort
+
